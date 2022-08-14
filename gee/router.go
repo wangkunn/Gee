@@ -3,11 +3,15 @@ package gee
 import "net/http"
 
 type router struct {
+	roots    map[string]*node
 	handlers map[string]HandlerFunc
 }
 
 func newRouter() *router {
-	return &router{handlers: make(map[string]HandlerFunc)}
+	return &router{
+		roots:    make(map[string]*node),
+		handlers: make(map[string]HandlerFunc),
+	}
 }
 
 func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
@@ -15,7 +19,9 @@ func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 	r.handlers[key] = handler
 }
 
-func (r *router) handler(c *Context) {
+func (r *router) handle(c *Context) {
+	n, params := r.getRoute
+
 	key := c.Method + "-" + c.Path
 	if handler, ok := r.handlers[key]; ok {
 		handler(c)
