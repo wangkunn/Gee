@@ -8,7 +8,6 @@ import (
 
 type H map[string]interface{}
 
-// Context 随着每一个请求的出现而产生，请求的结束而销毁，和当前请求强相关的信息都应由 Context 承载。
 type Context struct {
 	//origin objects
 	Writer http.ResponseWriter
