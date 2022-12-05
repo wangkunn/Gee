@@ -9,17 +9,20 @@ import (
 type H map[string]interface{}
 
 type Context struct {
-	//origin objects
+	// origin objects
 	Writer http.ResponseWriter
 	Req    *http.Request
-	//request info
+	// request info
 	Path   string
 	Method string
 	Params map[string]string
-	//response info
+	// response info
 	StatusCode int
-	handlers   []HandlerFunc
-	index      int
+	// middleware
+	handlers []HandlerFunc
+	index    int
+	// engine pointer
+	engine *Engine
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -32,7 +35,6 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 	}
 }
 
-// Next 调用下一个中间件并计数
 func (c *Context) Next() {
 	c.index++
 	s := len(c.handlers)
@@ -41,8 +43,17 @@ func (c *Context) Next() {
 	}
 }
 
+func (c *Context) Fail(code int, err string) {
+	c.index = len(c.handlers)
+	c.JSON(code, H{"message": err})
+}
+
+func (c *Context) Param(key string) string {
+	value, _ := c.Params[key]
+	return value
+}
+
 func (c *Context) PostForm(key string) string {
-	// FormValue  获取url中?后面的请求参数
 	return c.Req.FormValue(key)
 }
 
@@ -55,16 +66,10 @@ func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
 }
 
-func (c *Context) Param(key string) string {
-	value, _ := c.Params[key]
-	return value
-}
-
 func (c *Context) SetHeader(key string, value string) {
 	c.Writer.Header().Set(key, value)
 }
 
-// values ...interface{}: 0 到 N 个类型的参数interface{}。
 func (c *Context) String(code int, format string, values ...interface{}) {
 	c.SetHeader("Content-Type", "text/plain")
 	c.Status(code)
@@ -85,8 +90,10 @@ func (c *Context) Data(code int, data []byte) {
 	c.Writer.Write(data)
 }
 
-func (c *Context) HTML(code int, html string) {
+func (c *Context) HTML(code int, name string, data interface{}) {
 	c.SetHeader("Content-Type", "text/html")
 	c.Status(code)
-	c.Writer.Write([]byte(html))
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+		c.Fail(500, err.Error())
+	}
 }
