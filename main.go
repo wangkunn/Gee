@@ -11,7 +11,7 @@ func main() {
 		c.String(http.StatusOK, "Gee test\n")
 	})
 	r.GET("/index", func(c *gee.Context) {
-		c.String(http.StatusOK, "<h1>Index Page</h1>", "message")
+		c.HTML(http.StatusOK, "<h1>Index Page</h1>", "message")
 	})
 	r.GET("/panic", func(c *gee.Context) {
 		names := []string{"panic test"}
